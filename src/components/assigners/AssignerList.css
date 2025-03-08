@@ -1,0 +1,25 @@
+.assigners-container {
+  padding: 1rem;
+}
+
+.assigners-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.assigners-header h2 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.table td.actions {
+  width: 200px;
+} 
