@@ -21,11 +21,16 @@ interface Assigner {
   email: string;
 }
 
+interface ErrorState {
+  type: 'error' | 'success';
+  message: string;
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assigners, setAssigners] = useState<Assigner[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState({
@@ -40,13 +45,14 @@ export default function TasksPage() {
     try {
       const response = await fetch('/api/v1/tasks');
       if (!response.ok) {
-        throw new Error('Failed to fetch tasks');
+        setTasks([]);
+        return;
       }
       const data = await response.json();
       setTasks(data.data || []);
-      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching tasks:', err);
+      setTasks([]);
     }
   };
 
@@ -54,12 +60,14 @@ export default function TasksPage() {
     try {
       const response = await fetch('/api/v1/assigners');
       if (!response.ok) {
-        throw new Error('Failed to fetch assigners');
+        setAssigners([]);
+        return;
       }
       const data = await response.json();
       setAssigners(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching assigners:', err);
+      setAssigners([]);
     } finally {
       setLoading(false);
     }
@@ -84,11 +92,13 @@ export default function TasksPage() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to save task');
+        setError({ type: 'error', message: data.message || `Failed to ${editingTask ? 'update' : 'create'} task` });
+        return;
       }
 
+      setError({ type: 'success', message: `Task ${editingTask ? 'updated' : 'created'} successfully` });
       setShowForm(false);
       setEditingTask(null);
       setFormData({
@@ -99,8 +109,11 @@ export default function TasksPage() {
         assigner_id: ''
       });
       fetchTasks();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setError(null), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError({ type: 'error', message: 'An unexpected error occurred' });
     }
   };
 
@@ -113,12 +126,18 @@ export default function TasksPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete task');
+        const data = await response.json();
+        setError({ type: 'error', message: data.message || 'Failed to delete task' });
+        return;
       }
 
+      setError({ type: 'success', message: 'Task deleted successfully' });
       fetchTasks();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setError(null), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError({ type: 'error', message: 'An unexpected error occurred while deleting the task' });
     }
   };
 
@@ -132,13 +151,19 @@ export default function TasksPage() {
         body: JSON.stringify({ status }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error('Failed to update task status');
+        setError({ type: 'error', message: data.message || 'Failed to update task status' });
+        return;
       }
 
+      setError({ type: 'success', message: 'Task status updated successfully' });
       fetchTasks();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setError(null), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError({ type: 'error', message: 'An unexpected error occurred while updating status' });
     }
   };
 
@@ -176,11 +201,21 @@ export default function TasksPage() {
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className={`rounded-md p-4 ${
+          error.type === 'success' ? 'bg-green-50' : 'bg-red-50'
+        }`}>
           <div className="flex">
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-sm text-red-700">{error}</div>
+              <h3 className={`text-sm font-medium ${
+                error.type === 'success' ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {error.type === 'success' ? 'Success' : 'Error'}
+              </h3>
+              <div className={`mt-2 text-sm ${
+                error.type === 'success' ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {error.message}
+              </div>
             </div>
           </div>
         </div>

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/v1/assigners/{id} - Get Assigner Details
 export async function GET(request, { params }) {
@@ -128,9 +126,17 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Check if assigner exists
+    // Check if assigner exists and get their tasks
     const existingAssigner = await prisma.assigner.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        tasks: {
+          select: {
+            id: true,
+            status: true
+          }
+        }
+      }
     });
 
     if (!existingAssigner) {
@@ -140,16 +146,43 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Delete assigner
-    await prisma.assigner.delete({
-      where: { id }
+    // Check if all tasks are completed
+    const incompleteTasks = existingAssigner.tasks.filter(task => task.status !== 'completed');
+    
+    if (incompleteTasks.length > 0) {
+      return NextResponse.json(
+        { 
+          error: 'Bad Request', 
+          message: `Cannot delete assigner. They still have ${incompleteTasks.length} incomplete task(s).` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use a transaction to delete tasks and assigner
+    await prisma.$transaction(async (tx) => {
+      // First delete all completed tasks
+      await tx.task.deleteMany({
+        where: {
+          assignerId: id,
+          status: 'completed'
+        }
+      });
+
+      // Then delete the assigner
+      await tx.assigner.delete({
+        where: { id }
+      });
     });
 
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ 
+      status: 'success',
+      message: 'Assigner and their completed tasks deleted successfully' 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error deleting assigner:', error);
     return NextResponse.json(
-      { error: 'Server Error', message: 'Failed to delete assigner' },
+      { error: 'Server Error', message: 'Failed to delete assigner. Please try again.' },
       { status: 500 }
     );
   }

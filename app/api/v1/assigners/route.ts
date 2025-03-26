@@ -11,16 +11,6 @@ export async function GET() {
       }
     });
 
-    if (!assigners || assigners.length === 0) {
-      return NextResponse.json(
-        { 
-          status: 'error',
-          message: 'No assigners found'
-        },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json(
       {
         status: 'success',

@@ -17,11 +17,16 @@ interface StatusStats {
   total_tasks: number;
 }
 
+interface ErrorState {
+  type: 'error' | 'success';
+  message: string;
+}
+
 export default function StatsPage() {
   const [assignerStats, setAssignerStats] = useState<AssignerStats[]>([]);
   const [statusStats, setStatusStats] = useState<StatusStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -32,7 +37,9 @@ export default function StatsPage() {
         ]);
 
         if (!assignerResponse.ok || !statusResponse.ok) {
-          throw new Error('Failed to fetch statistics');
+          setAssignerStats([]);
+          setStatusStats(null);
+          return;
         }
 
         const assignerData = await assignerResponse.json();
@@ -40,9 +47,10 @@ export default function StatsPage() {
 
         setAssignerStats(assignerData.stats || []);
         setStatusStats(statusData.stats || null);
-        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('Error fetching statistics:', err);
+        setAssignerStats([]);
+        setStatusStats(null);
       } finally {
         setLoading(false);
       }
@@ -67,11 +75,21 @@ export default function StatsPage() {
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className={`rounded-md p-4 ${
+          error.type === 'success' ? 'bg-green-50' : 'bg-red-50'
+        }`}>
           <div className="flex">
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-sm text-red-700">{error}</div>
+              <h3 className={`text-sm font-medium ${
+                error.type === 'success' ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {error.type === 'success' ? 'Success' : 'Error'}
+              </h3>
+              <div className={`mt-2 text-sm ${
+                error.type === 'success' ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {error.message}
+              </div>
             </div>
           </div>
         </div>

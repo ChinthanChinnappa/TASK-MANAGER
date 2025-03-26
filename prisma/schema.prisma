@@ -26,7 +26,7 @@ model Task {
   status      String   // pending, in_progress, completed
   dueDate     DateTime
   assignerId  Int
-  assigner    Assigner @relation(fields: [assignerId], references: [id])
+  assigner    Assigner @relation(fields: [assignerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
