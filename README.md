@@ -1,7 +1,7 @@
 # 🗂️ Task Manager System
 
 A backend-based **Task Management System** built using **Node.js, Prisma ORM, and SQLite**.
-The system allows users to **create, manage, update, and track tasks efficiently** while demonstrating modern backend development practices such as **REST APIs, database modeling, and ORM integration**.
+The system allow users to **create, manage, update, and track tasks efficiently** while demonstrating modern backend development practices such as **REST APIs, database modeling, and ORM integration**.
 
 This project focuses on **structured backend development and database management using Prisma**.
 
